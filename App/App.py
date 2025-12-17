@@ -29,7 +29,8 @@ from PIL import Image
 from Courses import ds_course,web_course,android_course,ios_course,uiux_course,resume_videos,interview_videos
 import nltk
 nltk.download('stopwords')
-
+# Ensure upload directory exists (required for cloud deployment)
+os.makedirs("Uploaded_Resumes", exist_ok=True)
 
 ###### Preprocessing functions ######
 
