@@ -1,4 +1,4 @@
-# Developed by dnoobnerd [https://dnoobnerd.netlify.app]    Made with Streamlit
+# Made with Streamlit
 
 
 ###### Packages Used ######
