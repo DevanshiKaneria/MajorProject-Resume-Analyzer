@@ -4,5 +4,5 @@ numpy==1.23.2
 Pillow==9.2.0
 geopy==2.2.0
 plotly==5.10.0
-resume-parser==1.0.6
 streamlit-tags==1.2.8
+pdfminer.six==20220524
