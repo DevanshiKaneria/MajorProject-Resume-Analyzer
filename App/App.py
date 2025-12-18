@@ -1,15 +1,10 @@
-# AI- RESUME ANALYZER 
+# AI-RESUME ANALYZER
 import streamlit as st
 import pandas as pd
-import base64, random, time, datetime, os, io, socket, platform, secrets
+import base64, random, datetime, os, io, socket, platform, secrets
 import sqlite3
-import geocoder
 from geopy.geocoders import Nominatim
-from pyresparser import ResumeParser
-from pdfminer3.layout import LAParams
-from pdfminer3.pdfpage import PDFPage
-from pdfminer3.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer3.converter import TextConverter
+from resume_parser import ResumeParser
 from streamlit_tags import st_tags
 from PIL import Image
 import plotly.express as px
@@ -20,13 +15,10 @@ from Courses import (
 )
 
 # ---------------------- BASIC SETUP ----------------------
-
 st.set_page_config(page_title="AI Resume Analyzer", page_icon="./Logo/recommend.png")
-
 os.makedirs("Uploaded_Resumes", exist_ok=True)
 
 # ---------------------- DATABASE -------------------------
-
 conn = sqlite3.connect("resume_analyzer.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -73,14 +65,12 @@ CREATE TABLE IF NOT EXISTS user_feedback (
 conn.commit()
 
 # ---------------------- HELPERS --------------------------
-
 def insert_user(*args):
     cursor.execute("""
     INSERT INTO user_data VALUES (
     NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
     )""", args)
     conn.commit()
-
 
 def insert_feedback(name, email, score, comments, ts):
     cursor.execute(
@@ -89,36 +79,21 @@ def insert_feedback(name, email, score, comments, ts):
     )
     conn.commit()
 
-
-def pdf_reader(file):
-    rsrc = PDFResourceManager()
-    fake = io.StringIO()
-    converter = TextConverter(rsrc, fake, laparams=LAParams())
-    interpreter = PDFPageInterpreter(rsrc, converter)
-    with open(file, 'rb') as fh:
-        for page in PDFPage.get_pages(fh):
-            interpreter.process_page(page)
-    text = fake.getvalue()
-    converter.close()
-    fake.close()
-    return text
-
-
 def show_pdf(path):
     with open(path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
-    st.markdown(f'<iframe src="data:application/pdf;base64,{b64}" width="700" height="1000"></iframe>', unsafe_allow_html=True)
-
+    st.markdown(
+        f'<iframe src="data:application/pdf;base64,{b64}" width="700" height="1000"></iframe>',
+        unsafe_allow_html=True
+    )
 
 # ---------------------- UI -------------------------------
-
 img = Image.open('./Logo/RESUM.png')
 st.image(img)
 
 menu = st.sidebar.selectbox("Choose", ["User", "Feedback", "About"])
 
 # ---------------------- USER -----------------------------
-
 if menu == "User":
     name = st.text_input("Name")
     email = st.text_input("Email")
@@ -132,12 +107,13 @@ if menu == "User":
             f.write(pdf.getbuffer())
 
         show_pdf(path)
-        data = ResumeParser(path).get_extracted_data()
+
+        # ---------------------- RESUME PARSER ----------------
+        data = ResumeParser(path).get_extracted_data()  # Using resume-parser
 
         if data:
-            st.success(f"Hello {data['name']}")
+            st.success(f"Hello {data.get('name')}")
 
-            resume_text = pdf_reader(path)
             score = random.randint(60, 90)
 
             st.subheader("Resume Score")
@@ -162,7 +138,7 @@ if menu == "User":
                 data.get("email"),
                 score,
                 ts,
-                data.get("no_of_pages"),
+                "NA",  # resume-parser does not provide page count by default
                 "NA",
                 "NA",
                 str(data.get("skills")),
@@ -174,7 +150,6 @@ if menu == "User":
             st.balloons()
 
 # ---------------------- FEEDBACK -------------------------
-
 elif menu == "Feedback":
     with st.form("feedback"):
         fname = st.text_input("Name")
@@ -188,6 +163,5 @@ elif menu == "Feedback":
         st.success("Feedback saved")
 
 # ---------------------- ABOUT ----------------------------
-
 else:
     st.write("AI Resume Analyzer — Academic Deployment Version")
