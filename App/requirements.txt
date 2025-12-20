@@ -1,8 +1,6 @@
-streamlit==1.12.2
-pandas==1.4.4
-numpy==1.23.2
-Pillow==9.2.0
-geopy==2.2.0
-plotly==5.10.0
-streamlit-tags==1.2.8
-pdfminer.six==20220524
+streamlit==1.25.0
+pandas
+Pillow
+plotly
+pdfminer.six
+PyPDF2
