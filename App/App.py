@@ -1,151 +1,109 @@
 import streamlit as st
 import pandas as pd
-import base64, random, datetime, os, io
+import base64
+import random
+import time
+import datetime
 import sqlite3
-from PIL import Image
-import plotly.express as px
-from PyPDF2 import PdfReader
-from pdfminer.high_level import extract_text
+import os
+import io
 import re
+import hashlib
+import plotly.express as px
+import plotly.graph_objects as go
+from pdfminer.layout import LAParams
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import TextConverter
 
-# --- COURSES DATA ---
-ds_course = [['Machine Learning Crash Course by Google [Free]', 'https://developers.google.com/machine-learning/crash-course'], ['Machine Learning A-Z by Udemy','https://www.udemy.com/course/machinelearning/']]
-web_course = [['Django Crash course [Free]','https://youtu.be/e1IyzVyrLSU'], ['React Crash Course [Free]','https://youtu.be/Dorf8i6lCuk']]
-android_course = [['Android Development for Beginners [Free]','https://youtu.be/fis26HvvDII']]
-ios_course = [['Become an iOS Developer','https://www.udacity.com/course/ios-developer-nanodegree--nd003']]
-uiux_course = [['Google UX Design Professional Certificate','https://www.coursera.org/professional-certificates/google-ux-design']]
-resume_videos = ['https://youtu.be/Tt08KmFfIYQ','https://youtu.be/y8YH0Qbu5h4']
-interview_videos = ['https://youtu.be/HG68Ymazo18','https://youtu.be/BOvAAoxM4vg']
+# --- CONFIG & STYLING ---
+st.set_page_config(page_title="Aura AI | Next-Gen Recruitment", page_icon='✨', layout="wide")
 
-# --- DATABASE SETUP ---
-def get_db_connection():
-    conn = sqlite3.connect("resume_analyzer.db", check_same_thread=False)
-    return conn
+def apply_custom_theme():
+    st.markdown("""
+        <style>
+        /* Base Theme */
+        .main { background: linear-gradient(135deg, #f8f9fc 0%, #e2e8f0 100%); }
+        
+        /* Glassmorphism Cards */
+        .stMarkdown div[data-testid="stVerticalBlock"] > div.creative-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        /* Step Headers */
+        .step-header {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+            margin-top: 10px;
+            padding-left: 10px;
+            border-left: 5px solid #6366f1;
+        }
+        /* Hero Headers */
+        .hero-section {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #f8fafc;
+            padding: 60px 40px;
+            border-radius: 30px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 30px rgba(15, 23, 42, 0.2);
+        }
+        .hero-section h1 { color: #f1f5f9 !important; font-size: 3.5rem !important; font-weight: 800; letter-spacing: -1px; }
+        .hero-section p { font-size: 1.2rem; color: #94a3b8; }
+        
+        /* Custom Buttons */
+        .stButton>button {
+            width: 100%;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stButton>button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        }
+        
+        /* Metrics Styling */
+        [data-testid="stMetricValue"] { font-size: 2.2rem !important; font-weight: 700 !important; color: #1e293b !important; }
+        
+        /* Tech Badges */
+        .tech-badge {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 5px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
+# --- DATABASE LOGIC ---
 def init_db():
-    conn = get_db_connection()
+    conn = sqlite3.connect('aura_cv.db')
     cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS user_data (
-        ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        Name TEXT, Email_ID TEXT, Mobile TEXT,
-        Score INTEGER, Timestamp TEXT, Predicted_Field TEXT, Skills TEXT
-    )""")
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS user_feedback (
-        ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        feed_name TEXT, feed_email TEXT, feed_score TEXT, comments TEXT, Timestamp TEXT
-    )""")
+    cursor.execute('''CREATE TABLE IF NOT EXISTS user_data (
+                        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT, Email TEXT, Mobile TEXT, Degree TEXT,
+                        Job_Choice TEXT, Score INTEGER, Level TEXT, Timestamp TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS feedback (
+                        Name TEXT, Email TEXT, Rating INTEGER, Comments TEXT, Date TEXT)''')
     conn.commit()
-
-# --- HELPER FUNCTIONS ---
-def extract_skills(text):
-    skills_list = ['Python', 'Data Analysis', 'Machine Learning', 'Deep Learning', 'SQL', 'Tableau', 'React', 'Django', 'JavaScript', 'HTML', 'CSS', 'Java', 'C++', 'AWS', 'Docker']
-    found_skills = [skill for skill in skills_list if skill.lower() in text.lower()]
-    return found_skills
-
-def predict_field(skills):
-    if any(s in ['Python', 'Machine Learning', 'SQL', 'Data Analysis'] for s in skills):
-        return "Data Science", ds_course
-    elif any(s in ['React', 'Django', 'HTML', 'CSS', 'JavaScript'] for s in skills):
-        return "Web Development", web_course
-    return "Software Engineering", []
-
-def extract_education(text):
-    # Simple regex to find mentions of common degrees
-    education_keywords = ['B.Tech', 'B.E', 'M.Tech', 'MBA', 'BSc', 'MSc', 'Bachelor', 'Master']
-    found_edu = [edu for edu in education_keywords if edu.lower() in text.lower()]
-    return found_edu
-
-# --- MAIN APP ---
-def main():
-    st.set_page_config(page_title="AI Resume Analyzer", page_icon="📝")
-    init_db()
-    
-    st.title("AI Resume Analyzer")
-    
-    menu = st.sidebar.selectbox("Choose", ["User", "Feedback", "About"])
-
-    if menu == "User":
-        st.info("Upload your resume and get an AI-driven analysis of your profile.")
-        name = st.text_input("Full Name")
-        email = st.text_input("Email ID")
-        mobile = st.text_input("Mobile Number")
-        pdf_file = st.file_uploader("Upload Resume", type=["pdf"])
-
-        if pdf_file is not None:
-            # Extract text
-            with st.spinner('Analyzing Resume...'):
-                text = extract_text(pdf_file)
-                reader = PdfReader(pdf_file)
-                pages = len(reader.pages)
-                
-                # Logic for Skills & Field
-                skills = extract_skills(text)
-                field, recommended_courses = predict_field(skills)
-                education = extract_education(text)
-                
-                # Scoring Logic
-                score = 20 # Base score for uploading
-                if len(skills) > 5: score += 30
-                if len(education) > 0: score += 20
-                if pages >= 1: score += 10
-                score += random.randint(5, 15) # Random variability
-                score = min(score, 100)
-
-                st.success(f"Analysis Complete for {name if name else 'User'}!")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("Profile Insights")
-                    st.write(f"**Predicted Field:** {field}")
-                    st.write(f"**Education Detected:** {', '.join(education) if education else 'Not specified'}")
-                    st.write(f"**Resume Pages:** {pages}")
-                
-                with col2:
-                    st.subheader("Resume Score")
-                    st.metric(label="Overall Match", value=f"{score}%")
-                    st.progress(score / 100)
-
-                st.subheader("Extracted Skills")
-                st.write(f"{', '.join(skills) if skills else 'No matching technical skills detected.'}")
-                
-                # Recommendations
-                if recommended_courses:
-                    st.subheader("Recommended Courses to Improve Your Score")
-                    for c_name, c_link in recommended_courses:
-                        st.markdown(f"✅ [{c_name}]({c_link})")
-
-                # Save to DB
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                cursor.execute("INSERT INTO user_data (Name, Email_ID, Mobile, Score, Timestamp, Predicted_Field, Skills) VALUES (?,?,?,?,?,?,?)",
-                               (name, email, mobile, score, ts, field, str(skills)))
-                conn.commit()
-                st.balloons()
-
-    elif menu == "Feedback":
-        st.subheader("We value your feedback")
-        with st.form("feedback_form"):
-            f_name = st.text_input("Name")
-            f_email = st.text_input("Email")
-            f_score = st.slider("How satisfied are you with the analysis?", 1, 5)
-            f_comment = st.text_area("What can we improve?")
-            if st.form_submit_button("Submit Feedback"):
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                cursor.execute("INSERT INTO user_feedback (feed_name, feed_email, feed_score, comments, Timestamp) VALUES (?,?,?,?,?)",
-                               (f_name, f_email, f_score, f_comment, datetime.datetime.now().isoformat()))
-                conn.commit()
-                st.success("Thank you for your feedback!")
-
-    else:
-        st.subheader("About AI Resume Analyzer")
-        st.write("This tool uses Natural Language Processing (NLP) and PDF parsing to analyze professional resumes.")
-        st.write("- **Skills Extraction:** Detects core technical competencies.")
-        st.write("- **Field Prediction:** Categorizes your profile into Data Science, Web Dev, etc.")
-        st.write("- **Score:** Evaluates the completeness of your resume.")
-
-if __name__ == "__main__":
-    main()
+    conn.close()
