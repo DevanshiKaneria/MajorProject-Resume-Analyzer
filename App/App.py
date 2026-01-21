@@ -438,4 +438,33 @@ if u_mail.lower() in resume_text: score += 10
             st.divider()
 
             tab_analytics, tab_database, tab_feedback = st.tabs(["📈 Market Insights", "📋 Detailed Roster", "💬 User Sentiment"])
-            
+             with tab_analytics:
+                if not df.empty:
+                    col_g1, col_g2 = st.columns(2)
+                    with col_g1:
+                        fig1 = px.pie(df, names='Job_Choice', title='Talent Pool Distribution', hole=0.6)
+                        st.plotly_chart(fig1, use_container_width=True)
+                    with col_g2:
+                        fig2 = px.histogram(df, x='Score', title='Score Distribution', color_discrete_sequence=['#4f46e5'])
+                        st.plotly_chart(fig2, use_container_width=True)
+                else:
+                    st.info("No applicant data available.")
+
+            with tab_database:
+                st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+                st.dataframe(df, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            with tab_feedback:
+                if not df_f.empty:
+                    for _, row in df_f.iterrows():
+                        with st.expander(f"Review from {row['Name']} - Rating: {row['Rating']}⭐"):
+                            st.write(f"**Email:** {row['Email']}")
+                            st.write(f"**Date:** {row['Date']}")
+                            st.write(f"**Comments:** {row['Comments']}")
+                else:
+                    st.info("No feedback received yet.")
+            conn.close()
+
+if __name__ == "__main__":
+    run()
