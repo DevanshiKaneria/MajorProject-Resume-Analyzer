@@ -168,3 +168,123 @@ def run():
                 resume_text = pdf_reader(uploaded_file).lower()
                 score = 0
                 tips = []
+if u_mail.lower() in resume_text: score += 10
+                else: tips.append("❌ Your email in the form doesn't match the resume header.")
+
+                sections = {'education': 15, 'experience': 20, 'skills': 15, 'projects': 15, 'certifications': 10}
+                for section, points in sections.items():
+                    if section in resume_text: score += points
+                    else: tips.append(f"🚩 Missing section: {section.capitalize()}. Adding this boosts visibility.")
+
+                role_keywords = {
+                    "Data Scientist": ["python", "pandas", "machine learning", "statistics", "sql"],
+                    "Web Developer": ["javascript", "react", "html", "css", "node"],
+                    "Frontend Developer": ["javascript", "react", "html", "css", "vue", "angular", "tailwind"],
+                    "Backend Developer": ["python", "node", "express", "sql", "nosql", "api", "django"],
+                    "DevOps Engineer": ["docker", "kubernetes", "aws", "jenkins", "terraform"]
+                }
+                
+                match_count = 0
+                current_keywords = role_keywords.get(u_job, ["api", "git", "database", "problem solving", "optimization"]) 
+                detected_skills = []
+                for k in current_keywords:
+                    if k in resume_text: 
+                        match_count += 1
+                        detected_skills.append(k)
+                
+                score += (match_count * 3) 
+                if match_count < 3:
+                    tips.append(f"💡 Technical Gap: Add more keywords like {', '.join(current_keywords[:3])}.")
+
+                role_questions = {
+                    "Software Engineer": [
+                        "Explain the difference between Stack and Queue data structures.",
+                        "How do you handle error management in your typical coding workflow?",
+                        "What is your approach to optimizing code for better performance?"
+                    ],
+                    "Data Scientist": [
+                        "What is the difference between Overfitting and Underfitting?",
+                        "How do you handle missing values in a large dataset?",
+                        "Explain the concept of P-value in statistical hypothesis testing."
+                    ],
+                    "Web Developer": [
+                        "What are the benefits of using React Hooks over Class Components?",
+                        "Explain the Box Model in CSS and how it impacts layout design.",
+                        "How does asynchronous programming work in JavaScript?"
+                    ]
+                }
+                interview_q = role_questions.get(u_job, [
+                    "What is your greatest technical accomplishment to date?",
+                    "How do you stay updated with the latest trends in your industry?",
+                    "Describe a time you had to troubleshoot a complex problem."
+                ])
+
+                role_video_map = {
+                    "Software Engineer": "https://www.youtube.com/watch?v=avdDEZCcluo",
+                    "Frontend Developer": "https://www.youtube.com/watch?v=DbRXv5TXMEE",
+                    "Backend Developer": "https://www.youtube.com/watch?v=OeEHJgzqS1k",
+                    "Full Stack Developer": "https://www.youtube.com/watch?v=GxmfcnU3feo",
+                    "Data Scientist": "https://www.youtube.com/watch?v=9R3X0JoCLyU",
+                    "Data Analyst": "https://www.youtube.com/watch?v=8411fEhNKNc",
+                    "Machine Learning Engineer": "https://www.youtube.com/watch?v=quTX3fevt3s",
+                    "AI Researcher": "https://www.youtube.com/watch?v=LVrQcTfm4pc",
+                    "DevOps Engineer": "https://www.youtube.com/watch?v=RRBF2YWXFtY",
+                    "UI/UX Designer": "https://www.youtube.com/watch?v=Q324oRLYhlM",
+                    "Product Manager": "https://www.youtube.com/watch?v=Jk2g9Drr1rI",
+                    "Cybersecurity Analyst": "https://www.youtube.com/watch?v=20W7BML1JRI",
+                    "Cloud Architect (AWS/Azure)": "https://www.youtube.com/watch?v=N4sJj-SxX00",
+                    "Mobile App Developer (iOS/Android)": "https://www.youtube.com/watch?v=s4rdFWNoL40",
+                    "Blockchain Developer": "https://www.youtube.com/watch?v=uULy2rc6YDc",
+                    "Quality Assurance (QA) Engineer": "https://www.youtube.com/watch?v=Hjt0SCeGrBY",
+                    "Game Developer": "https://www.youtube.com/watch?v=MjHalxr_tDw"
+                }
+                yt_link = role_video_map.get(u_job, "https://www.youtube.com/watch?v=YS4e4q9oBaU")
+
+                experience_keywords = ['years', 'senior', 'manager', 'lead', 'specialist']
+                if 'intern' in resume_text or 'student' in resume_text:
+                    level = "Internship / Entry Level"
+                    course_rec = "Foundational Certification in " + u_job
+                elif any(x in resume_text for x in experience_keywords) and score > 70:
+                    level = "Advanced / Professional"
+                    course_rec = "Advanced System Architecture & Leadership"
+                else:
+                    level = "Fresher / Junior Associate"
+                    course_rec = "Intermediate Specialization in " + u_job
+
+                st.balloons()
+                st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+                st.header(f"📊 Assessment for {u_name}")
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.metric("Resume Score", f"{min(score, 100)}%")
+                    st.subheader(f"Level: {level}")
+                    st.write(f"**Target Role:** {u_job}")
+                
+                with col2:
+                    st.markdown("### 🛠️ 10 Professional Improvement Tips")
+                    base_tips =[
+                        "Use action verbs like 'Developed', 'Managed', 'Optimized'.",
+                        "Quantify achievements (e.g., 'Reduced latency by 20%').",
+                        "Ensure consistent font sizing for headers.",
+                        "Save resume as 'Firstname_Lastname_Role.pdf'.",
+                        "Limit resume to 1-2 pages maximum.",
+                        "Include your GitHub or Portfolio link.",
+                        "Check for any spelling or grammatical errors.",
+                        "Use a clean, ATS-friendly single-column layout.",
+                        "Tailor your summary to mention the target role directly.",
+                        "Avoid using progress bars for skill levels; use text."
+                    ]
+                    final_tips = (tips + base_tips)[:10]
+                    for t in final_tips:
+                        st.write(t)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+                st.subheader("🕸️ Skill Gap Visualization")
+                categories = ['Core Skills', 'Education', 'Projects', 'Experience', 'Keywords']
+                core_val = (match_count / len(current_keywords)) * 100 if current_keywords else 0
+                edu_val = 100 if 'education' in resume_text else 0
+                proj_val = 100 if 'projects' in resume_text else 0
+                exp_val = 100 if 'experience' in resume_text else 0
+                key_val = 80 if score > 50 else 40
+                
