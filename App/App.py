@@ -352,3 +352,90 @@ if u_mail.lower() in resume_text: score += 10
                     conn.close()
                     st.success("High five! 🖐️ Feedback received.")
             st.markdown("</div>", unsafe_allow_html=True)
+ elif choice == "📖 About Project":
+        st.markdown("<div class='hero-section'><h1>📖 Inside Aura AI</h1><p>The convergence of Data Science and Talent Management</p></div>", unsafe_allow_html=True)
+        tab_mission, tab_tech, tab_features, tab_dev = st.tabs(["🎯 Mission", "🛠️ Architecture", "✨ Key Features", "👨‍💻 Developer Insight"])
+        
+        with tab_mission:
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            st.markdown("## Reimagining Hiring")
+            st.write("Aura AI was engineered to dismantle the barriers between talent and opportunity. By leveraging natural language processing and pattern recognition, we turn static PDFs into dynamic career trajectories.")
+            st.markdown("---")
+            c1, c2, c3 = st.columns(3)
+            c1.markdown("### ⚡ Speed\nReduce screening time from hours to milliseconds.")
+            c2.markdown("### 🔍 Precision\nIdentify hidden skills and keyword synergies.")
+            c3.markdown("### 🎨 Clarity\nProvide candidates with actionable improvement paths.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with tab_tech:
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            st.markdown("### The Engine Room")
+            st.write("A robust stack designed for reliability and speed.")
+            st.markdown("""
+                <span class='tech-badge'>Streamlit (Frontend)</span>
+                <span class='tech-badge'>SQLite3 (Database)</span>
+                <span class='tech-badge'>PDFMiner (Parsing)</span>
+                <span class='tech-badge'>Plotly (Data Viz)</span>
+                <span class='tech-badge'>Python (Core)</span>
+                <span class='tech-badge'>Hashlib (Security)</span>
+            """, unsafe_allow_html=True)
+            st.info("The application utilizes an isolated relational database for high-integrity data persistence.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with tab_features:
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            st.subheader("What makes Aura different?")
+            st.write("1. **Smart Scoring:** Not just keyword counting, but contextual mapping.")
+            st.write("2. **Career Roadmaps:** Integrated video content for targeted upskilling.")
+            st.write("3. **Interview Intel:** Predictive question generation based on role-specific data.")
+            st.write("4. **Nexus Dashboard:** A command center for recruitment managers.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with tab_dev:
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            st.subheader("Next on the Horizon")
+            st.warning("Integrating Large Language Models (LLMs) for conversational resume feedback.")
+            st.success("Developing Multi-user workspace for collaborative hiring teams.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    elif choice == "🔐 Admin Nexus":
+        if 'admin_logged_in' not in st.session_state: st.session_state.admin_logged_in = False
+        
+        if not st.session_state.admin_logged_in:
+            st.markdown("<div class='hero-section' style='padding: 40px;'><h1>🔐 Admin Gateway</h1><p>Authorized Personnel Only</p></div>", unsafe_allow_html=True)
+            
+            # --- CREATIVE LOGIN UI ---
+            st.markdown("<div class='creative-card' style='max-width: 500px; margin: 0 auto;'>", unsafe_allow_html=True)
+            st.image("https://cdn-icons-png.flaticon.com/512/6195/6195699.png", width=80)
+            st.subheader("Nexus Authentication")
+            l_user = st.text_input("Username", placeholder="Enter admin username")
+            l_pwd = st.text_input("Password", type='password', placeholder="••••••••")
+            
+            if st.button("Access Command Center"):
+                if l_user == ADMIN_USERNAME and l_pwd == ADMIN_PASSWORD:
+                    st.session_state.admin_logged_in = True
+                    st.rerun()
+                else:
+                    st.error("Access Forbidden: Invalid Credentials")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        else:
+            # --- INTEGRATED RECRUITMENT INTELLIGENCE DASHBOARD ---
+            st.markdown("<h1 style='color: #4f46e5;'>📊 Recruitment Intelligence Dashboard</h1>", unsafe_allow_html=True)
+            if st.sidebar.button("Logout from Nexus"):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+
+            conn = sqlite3.connect('aura_cv.db')
+            df = pd.read_sql_query("SELECT * FROM user_data", conn)
+            df_f = pd.read_sql_query("SELECT * FROM feedback", conn)
+            
+            c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+            c_m1.metric("Total Applicants", len(df))
+            c_m2.metric("Avg Score", f"{df['Score'].mean():.1f}%" if not df.empty else "0%")
+            c_m3.metric("Top Domain", df['Level'].mode()[0] if not df.empty else "N/A")
+            c_m4.metric("Active Roles", df['Job_Choice'].nunique() if not df.empty else "0")
+            st.divider()
+
+            tab_analytics, tab_database, tab_feedback = st.tabs(["📈 Market Insights", "📋 Detailed Roster", "💬 User Sentiment"])
+            
