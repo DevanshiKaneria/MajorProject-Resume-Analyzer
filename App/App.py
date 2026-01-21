@@ -107,3 +107,64 @@ def init_db():
                         Name TEXT, Email TEXT, Rating INTEGER, Comments TEXT, Date TEXT)''')
     conn.commit()
     conn.close()
+# --- HELPER FUNCTIONS ---
+def pdf_reader(file):
+    resource_manager = PDFResourceManager()
+    fake_file_handle = io.StringIO()
+    converter = TextConverter(resource_manager, fake_file_handle, laparams=LAParams())
+    page_interpreter = PDFPageInterpreter(resource_manager, converter)
+    file.seek(0)
+    for page in PDFPage.get_pages(file, caching=True, check_extractable=True):
+        page_interpreter.process_page(page)
+    text = fake_file_handle.getvalue()
+    converter.close()
+    fake_file_handle.close()
+    return text
+
+# --- APP LOGIC ---
+def run():
+    init_db()
+    apply_custom_theme()
+    
+    # --- HARDCODED ADMIN CREDENTIALS ---
+    ADMIN_USERNAME = "admin"
+    ADMIN_PASSWORD = "aura_password_2025" # Change this to your preferred master password
+    
+    with st.sidebar:
+        st.markdown("<h1 style='text-align: center; color: #4f46e5;'>✨ AURA AI</h1>", unsafe_allow_html=True)
+        st.divider()
+        choice = st.radio("Navigation", ["🌈 User Portal", "💬 Feedback Hub", "📖 About Project", "🔐 Admin Nexus"], label_visibility="collapsed")
+        st.divider()
+        st.markdown("<p style='text-align: center; font-size: 0.8rem; color: #64748b;'>Empowering Careers with Intelligence<br>© 2025 Aura Intelligence</p>", unsafe_allow_html=True)
+
+    if choice == "🌈 User Portal":
+        st.markdown("<div class='hero-section'><h1>Unlock Your Potential 🚀</h1><p>Upload your resume and let our AI curate your professional roadmap</p></div>", unsafe_allow_html=True)
+        
+        st.markdown("<div class='step-header'>Step 1: Personal Blueprint</div>", unsafe_allow_html=True)
+        with st.container():
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            c1, c2 = st.columns(2)
+            u_name = c1.text_input("Full Name", placeholder="John Doe")
+            u_mail = c2.text_input("Email Address", placeholder="john@example.com")
+            u_mob = c1.text_input("Contact Number", placeholder="+91 0000000000")
+            u_deg = c2.text_input("Highest Degree", placeholder="B.Tech Computer Science")
+            
+            tech_roles = [
+                "Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer",
+                "Data Scientist", "Data Analyst", "Machine Learning Engineer", "AI Researcher",
+                "DevOps Engineer", "Cloud Architect (AWS/Azure)", "Cybersecurity Analyst",
+                "UI/UX Designer", "Product Manager", "Mobile App Developer (iOS/Android)",
+                "Blockchain Developer", "Embedded Systems Engineer", "Quality Assurance (QA) Engineer",
+                "Database Administrator", "Network Engineer", "Game Developer", "Salesforce Developer"
+            ]
+            u_job = st.selectbox("🎯 Target Technology Role", tech_roles)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='step-header'>Step 2: Experience Validation</div>", unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Upload your Resume (PDF format)", type=["pdf"])
+
+        if uploaded_file and u_name and u_mail:
+            with st.spinner("🧬 Processing Neural Patterns..."):
+                resume_text = pdf_reader(uploaded_file).lower()
+                score = 0
+                tips = []
