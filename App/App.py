@@ -287,4 +287,68 @@ if u_mail.lower() in resume_text: score += 10
                 proj_val = 100 if 'projects' in resume_text else 0
                 exp_val = 100 if 'experience' in resume_text else 0
                 key_val = 80 if score > 50 else 40
-                
+                 fig = go.Figure()
+                fig.add_trace(go.Scatterpolar(
+                    r=[core_val, edu_val, proj_val, exp_val, key_val],
+                    theta=categories,
+                    fill='toself',
+                    name='Candidate Profile',
+                    line_color='#6366f1'
+                ))
+                fig.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                    showlegend=False,
+                    margin=dict(t=30, b=30)
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+                st.subheader("💡 Smart Interview Preparation")
+                st.write("Based on your background and target role, practice these high-probability questions:")
+                for i, q in enumerate(interview_q):
+                    st.info(f"**Question {i+1}:** {q}")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+                c_a, c_b = st.columns(2)
+                with c_a:
+                    st.subheader(f"📺 {u_job} Career Roadmap")
+                    st.video(yt_link)
+                with c_b:
+                    st.subheader("🎓 Recommended Learning")
+                    st.info(f"**Recommended Course:** {course_rec}")
+                    st.write("Available on platforms like Coursera, Udemy, and edX.")
+                    st.success("🏆 Recommended Certification: Industry Standard Professional Cert")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                conn = sqlite3.connect('aura_cv.db')
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO user_data (Name, Email, Mobile, Degree, Job_Choice, Score, Level, Timestamp) VALUES (?,?,?,?,?,?,?,?)",
+                               (u_name, u_mail, u_mob, u_deg, u_job, score, level, str(datetime.datetime.now())))
+                conn.commit()
+                conn.close()
+
+    elif choice == "💬 Feedback Hub":
+        st.markdown("<div class='hero-section'><h1>🌟 Your Voice Matters</h1><p>Help us perfect Aura AI with your creative feedback</p></div>", unsafe_allow_html=True)
+        col_f1, col_f2 = st.columns([1, 1.2])
+        with col_f1:
+            st.image("https://cdn-icons-png.flaticon.com/512/4144/4144516.png", width=300)
+        with col_f2:
+            st.markdown("<div class='creative-card'>", unsafe_allow_html=True)
+            st.subheader("Leave a Review")
+            f_name = st.text_input("Name")
+            f_mail = st.text_input("Email")
+            f_rate = st.feedback("stars")
+            f_comment = st.text_area("Share your experience...")
+            if st.button("🚀 Submit Feedback"):
+                if f_name and f_mail:
+                    conn = sqlite3.connect('aura_cv.db')
+                    cursor = conn.cursor()
+                    rating_val = (f_rate + 1) if f_rate is not None else 5
+                    cursor.execute("INSERT INTO feedback (Name, Email, Rating, Comments, Date) VALUES (?,?,?,?,?)", 
+                                   (f_name, f_mail, rating_val, f_comment, str(datetime.date.today())))
+                    conn.commit()
+                    conn.close()
+                    st.success("High five! 🖐️ Feedback received.")
+            st.markdown("</div>", unsafe_allow_html=True)
